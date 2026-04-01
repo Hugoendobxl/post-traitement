@@ -241,7 +241,7 @@ function handleSend() {
 
   fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
-    headers: { 'accept': 'application/json', 'api-key': 'VOTRE_CLE_API_BREVO', 'content-type': 'application/json' },
+    headers: { 'accept': 'application/json', 'api-key': 'HANDLED_BY_BACKEND', 'content-type': 'application/json' },
     body: payload
   })
   .then(function(resp) {
