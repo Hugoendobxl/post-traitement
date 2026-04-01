@@ -210,8 +210,10 @@ function setupToggle(groupId, key) {
     });
   });
 }
-setupToggle('genre-group', 'genre');
-setupToggle('langue-group', 'langue');
+document.addEventListener('DOMContentLoaded', function() {
+  setupToggle('genre-group', 'genre');
+  setupToggle('langue-group', 'langue');
+});
 
 /* ── SEND ── */
 var TIDS  = { fr: 1, nl: 2, en: 3 };
