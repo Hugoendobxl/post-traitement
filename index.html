@@ -119,7 +119,7 @@
             <button class="tb" data-value="en" onclick="document.querySelectorAll('#langue-group .tb').forEach(b=>b.classList.remove('active'));this.classList.add('active');state.langue='en';">English</button>
           </div>
         </div>
-        <button class="btn-send" id="btn-send" >Envoyer l'email post-traitement</button>
+        <button class="btn-send" id="btn-send" onclick="handleSend()">Envoyer l'email post-traitement</button>
       </div>
       <div class="sstate" id="success-view">
         <div class="si">&#10003;</div>
@@ -260,7 +260,7 @@ function handleSend() {
   });
 }
 
-document.getElementById('btn-send').addEventListener('click', handleSend);
+
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Enter' && document.getElementById('module-page').classList.contains('visible')) handleSend();
 });
