@@ -107,16 +107,16 @@
         <div class="fg">
           <label class="fl">Genre</label>
           <div class="tg" id="genre-group">
-            <button class="tb active" data-value="madame">Madame</button>
-            <button class="tb" data-value="monsieur">Monsieur</button>
+            <button class="tb active" data-value="madame" onclick="document.querySelectorAll('#genre-group .tb').forEach(b=>b.classList.remove('active'));this.classList.add('active');state.genre='madame';">Madame</button>
+            <button class="tb" data-value="monsieur" onclick="document.querySelectorAll('#genre-group .tb').forEach(b=>b.classList.remove('active'));this.classList.add('active');state.genre='monsieur';">Monsieur</button>
           </div>
         </div>
         <div class="fg">
           <label class="fl">Langue</label>
           <div class="tg" id="langue-group">
-            <button class="tb active" data-value="fr">Fran&ccedil;ais</button>
-            <button class="tb" data-value="nl">Nederlands</button>
-            <button class="tb" data-value="en">English</button>
+            <button class="tb active" data-value="fr" onclick="document.querySelectorAll('#langue-group .tb').forEach(b=>b.classList.remove('active'));this.classList.add('active');state.langue='fr';">Fran&ccedil;ais</button>
+            <button class="tb" data-value="nl" onclick="document.querySelectorAll('#langue-group .tb').forEach(b=>b.classList.remove('active'));this.classList.add('active');state.langue='nl';">Nederlands</button>
+            <button class="tb" data-value="en" onclick="document.querySelectorAll('#langue-group .tb').forEach(b=>b.classList.remove('active'));this.classList.add('active');state.langue='en';">English</button>
           </div>
         </div>
         <button class="btn-send" id="btn-send">Envoyer l'email post-traitement</button>
