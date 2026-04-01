@@ -119,13 +119,13 @@
             <button class="tb" data-value="en" onclick="document.querySelectorAll('#langue-group .tb').forEach(b=>b.classList.remove('active'));this.classList.add('active');state.langue='en';">English</button>
           </div>
         </div>
-        <button class="btn-send" id="btn-send">Envoyer l'email post-traitement</button>
+        <button class="btn-send" id="btn-send" >Envoyer l'email post-traitement</button>
       </div>
       <div class="sstate" id="success-view">
         <div class="si">&#10003;</div>
         <div class="st">Email envoy&eacute; !</div>
         <p class="ss">Envoy&eacute; &agrave; <strong id="s-email"></strong><br><strong id="s-genre"></strong> &middot; <strong id="s-langue"></strong></p>
-        <button class="btn-reset" id="btn-reset">&#8629; Nouveau patient</button>
+        <button class="btn-reset" id="btn-reset" onclick="document.getElementById('success-view').classList.remove('visible');document.getElementById('form-view').style.display='block';">&#8629; Nouveau patient</button>
       </div>
     </div>
     <div class="cfooter">
@@ -233,16 +233,14 @@ function handleSend() {
   btn.classList.add('loading');
   btn.textContent = 'Envoi en cours...';
 
-  var payload = JSON.stringify({
-    templateId: TIDS[state.langue],
-    to: [{ email: emailVal }],
-    params: { CIVILITE: CIVIL[state.genre] }
-  });
-
-  fetch('https://api.brevo.com/v3/smtp/email', {
+  fetch('https://cabinet-finance-api-production.up.railway.app/api/send-post-treatment', {
     method: 'POST',
-    headers: { 'accept': 'application/json', 'api-key': 'HANDLED_BY_BACKEND', 'content-type': 'application/json' },
-    body: payload
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      email: emailVal,
+      templateId: TIDS[state.langue],
+      params: { CIVILITE: CIVIL[state.genre] }
+    })
   })
   .then(function(resp) {
     if (resp.ok) {
