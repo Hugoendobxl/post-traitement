@@ -30,7 +30,7 @@
     #module-page{display:none;min-height:100vh;background:#0A0614;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;position:relative;}
     #module-page.visible{display:flex;}
     #module-page canvas{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;}
-    .card{position:relative;z-index:1;width:100%;max-width:460px;background:rgba(0,0,0,0.55);backdrop-filter:blur(20px);border:1px solid rgba(206,147,216,0.2);border-radius:24px;overflow:hidden;box-shadow:0 0 60px rgba(206,147,216,0.1),0 24px 80px rgba(0,0,0,.4);animation:rise .5s cubic-bezier(.16,1,.3,1) both;}
+    .card{position:relative;z-index:1;width:100%;max-width:460px;background:rgba(0,0,0,0.55);backdrop-filter:blur(20px);border:1px solid rgba(206,147,216,0.2);border-radius:24px;overflow:hidden;box-shadow:0 0 60px rgba(206,147,216,0.1),0 24px 80px rgba(0,0,0,.4);animation:rise .5s cubic-bezier(.16,1,.3,1) both;transition:max-width .3s ease;}
     .logo-banner{display:none;}
     .ebar{background:rgba(206,147,216,0.08);padding:12px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(206,147,216,0.15);}
     .ep{display:inline-flex;align-items:center;gap:7px;background:rgba(206,147,216,0.1);border:1px solid rgba(206,147,216,0.25);border-radius:100px;padding:4px 12px;}
@@ -71,6 +71,63 @@
     .home-btn{display:inline-flex;align-items:center;gap:7px;margin-top:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:7px 16px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;color:rgba(255,255,255,.35);letter-spacing:1px;text-transform:uppercase;text-decoration:none;transition:all .2s;}
     .home-btn:hover{background:rgba(255,255,255,.1);border-color:rgba(206,147,216,.4);color:#CE93D8;}
     @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+    /* ── TABS ── */
+    .tab-nav{display:flex;gap:4px;background:rgba(255,255,255,0.04);border:1px solid rgba(206,147,216,0.2);border-radius:10px;padding:4px;margin-bottom:20px;}
+    .tab-btn{flex:1;padding:10px 8px;border:none;border-radius:7px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;color:rgba(255,255,255,.35);background:transparent;cursor:pointer;transition:all .18s;letter-spacing:.5px;text-transform:uppercase;}
+    .tab-btn.active{background:rgba(206,147,216,0.15);color:#CE93D8;box-shadow:0 0 12px rgba(206,147,216,0.15);}
+    .tab-panel{display:none;}
+    .tab-panel.active{display:block;}
+
+    /* ── IMPORT / DROPZONE ── */
+    .dropzone{border:2px dashed rgba(206,147,216,0.3);border-radius:14px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(206,147,216,0.04);margin-bottom:16px;}
+    .dropzone:hover,.dropzone.dragover{border-color:#CE93D8;background:rgba(206,147,216,0.1);}
+    .dropzone-icon{font-size:28px;margin-bottom:8px;color:#CE93D8;}
+    .dropzone-text{font-size:13px;color:rgba(255,255,255,.4);line-height:1.6;}
+    .dropzone-text strong{color:#CE93D8;}
+    .dropzone input[type="file"]{display:none;}
+    .file-info{display:flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(206,147,216,0.08);border:1px solid rgba(206,147,216,0.2);border-radius:8px;margin-bottom:16px;font-size:12px;color:rgba(255,255,255,.5);}
+    .file-info strong{color:#CE93D8;}
+    .file-info .file-clear{margin-left:auto;background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;font-size:14px;padding:2px 6px;}
+    .file-info .file-clear:hover{color:#DC2626;}
+
+    /* ── PATIENT LIST ── */
+    .plist-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+    .plist-count{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);}
+    .plist-count strong{color:#CE93D8;}
+    .btn-send-all{padding:8px 18px;background:rgba(206,147,216,0.15);color:#CE93D8;border:1.5px solid rgba(206,147,216,0.4);border-radius:8px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.8px;text-transform:uppercase;transition:all .2s;}
+    .btn-send-all:hover{background:rgba(206,147,216,0.25);border-color:#CE93D8;box-shadow:0 0 16px rgba(206,147,216,0.2);}
+    .btn-send-all:disabled{opacity:.5;pointer-events:none;}
+    .plist{max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:4px;}
+    .plist::-webkit-scrollbar{width:4px;}
+    .plist::-webkit-scrollbar-track{background:transparent;}
+    .plist::-webkit-scrollbar-thumb{background:rgba(206,147,216,0.25);border-radius:4px;}
+    .prow{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(206,147,216,0.12);border-radius:10px;transition:all .2s;}
+    .prow.sent{border-color:rgba(76,175,80,0.3);background:rgba(76,175,80,0.06);}
+    .prow.ignored{opacity:.4;}
+    .prow-info{flex:1;min-width:0;}
+    .prow-name{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .prow-email{font-size:11px;color:rgba(255,255,255,.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .prow-toggles{display:flex;gap:4px;flex-shrink:0;}
+    .prow-toggle{padding:4px 8px;border:1px solid rgba(206,147,216,0.2);border-radius:6px;font-family:'Outfit',sans-serif;font-size:10px;font-weight:600;color:rgba(255,255,255,.3);background:transparent;cursor:pointer;transition:all .15s;}
+    .prow-toggle.active{background:rgba(206,147,216,0.15);color:#CE93D8;border-color:rgba(206,147,216,0.35);}
+    .prow-actions{display:flex;gap:4px;flex-shrink:0;}
+    .pbtn{padding:6px 12px;border-radius:7px;border:1px solid transparent;font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;letter-spacing:.3px;}
+    .pbtn-send{background:rgba(206,147,216,0.15);color:#CE93D8;border-color:rgba(206,147,216,0.3);}
+    .pbtn-send:hover{background:rgba(206,147,216,0.25);box-shadow:0 0 12px rgba(206,147,216,0.15);}
+    .pbtn-ignore{background:rgba(255,255,255,0.04);color:rgba(255,255,255,.3);border-color:rgba(255,255,255,0.1);}
+    .pbtn-ignore:hover{background:rgba(255,255,255,0.08);color:rgba(255,255,255,.5);}
+    .pbtn:disabled{opacity:.5;pointer-events:none;}
+    .prow-status{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;flex-shrink:0;min-width:55px;text-align:center;}
+    .prow-status.status-sent{color:#4CAF50;}
+    .prow-status.status-ignored{color:rgba(255,255,255,.25);}
+    .prow-status.status-sending{color:#CE93D8;}
+    .prow-status.status-error{color:#DC2626;}
+    .import-summary{margin-top:14px;padding:10px 14px;background:rgba(206,147,216,0.06);border:1px solid rgba(206,147,216,0.15);border-radius:8px;font-size:12px;color:rgba(255,255,255,.4);text-align:center;}
+    .import-summary strong{color:#CE93D8;}
+
+    /* ── RESPONSIVE CARD WIDER FOR IMPORT ── */
+    .card.wide{max-width:640px;}
   </style>
 <script>
 var state = { genre: 'madame', langue: 'fr' };
@@ -121,6 +178,7 @@ function handleSend() {
   });
 }
 </script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -147,7 +205,37 @@ function handleSend() {
       <div class="top-rule"></div>
       <div class="mlabel">Envoi automatique</div>
       <h1 class="ctitle">Email post-traitement</h1>
-      <p class="cdesc">Renseignez l'adresse email, le genre et la langue du patient.</p>
+      <p class="cdesc">Importez la liste du jour ou envoyez manuellement.</p>
+
+      <!-- Tab navigation -->
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="import" onclick="switchTab('import')">Import Liste</button>
+        <button class="tab-btn" data-tab="manual" onclick="switchTab('manual')">Manuel</button>
+      </div>
+
+      <!-- ── TAB: IMPORT ── -->
+      <div class="tab-panel active" id="tab-import">
+        <div id="import-upload">
+          <div class="dropzone" id="dropzone">
+            <div class="dropzone-icon">&#128196;</div>
+            <p class="dropzone-text">Glissez un fichier <strong>.xls / .xlsx</strong> ici<br>ou cliquez pour s&eacute;lectionner</p>
+            <input type="file" id="file-input" accept=".xls,.xlsx"/>
+          </div>
+        </div>
+        <div id="import-file-info" style="display:none;"></div>
+        <div id="import-list" style="display:none;">
+          <div class="plist-header">
+            <span class="plist-count"><strong id="plist-total">0</strong> patients &middot; <strong id="plist-pending">0</strong> en attente</span>
+            <button class="btn-send-all" id="btn-send-all" onclick="sendAllPatients()">Envoyer tout</button>
+          </div>
+          <div class="plist" id="plist"></div>
+          <div class="import-summary" id="import-summary" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- ── TAB: MANUAL (existing form) ── -->
+      <div class="tab-panel" id="tab-manual">
+      <p class="cdesc" style="margin-bottom:16px;">Renseignez l'adresse email, le genre et la langue du patient.</p>
       <div id="form-view">
         <div class="fg">
           <label class="fl">Adresse email du patient</label>
@@ -176,6 +264,7 @@ function handleSend() {
         <p class="ss">Envoy&eacute; &agrave; <strong id="s-email"></strong><br><strong id="s-genre"></strong> &middot; <strong id="s-langue"></strong></p>
         <button class="btn-reset" id="btn-reset" onclick="document.getElementById('success-view').classList.remove('visible');document.getElementById('form-view').style.display='block';">&#8629; Nouveau patient</button>
       </div>
+      </div><!-- /tab-manual -->
     </div>
     <div class="cfooter">
       <span class="fm">Aucune donn&eacute;e stock&eacute;e &middot; RGPD</span>
@@ -311,7 +400,7 @@ function handleSend() {
 
 
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter' && document.getElementById('module-page').classList.contains('visible')) handleSend();
+  if (e.key === 'Enter' && document.getElementById('module-page').classList.contains('visible') && document.getElementById('tab-manual').classList.contains('active')) handleSend();
 });
 
 /* ── RESET ── */
@@ -321,6 +410,281 @@ document.getElementById('btn-reset').addEventListener('click', function() {
   document.getElementById('success-view').classList.remove('visible');
   state = { genre: 'madame', langue: 'fr' };
 });
+
+/* ── TABS ── */
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelector('.tab-btn[data-tab="' + tab + '"]').classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  var card = document.querySelector('.card');
+  if (tab === 'import' && importedPatients.length > 0) {
+    card.classList.add('wide');
+  } else {
+    card.classList.remove('wide');
+  }
+}
+
+/* ── IMPORT XLSX ── */
+var importedPatients = [];
+
+// Dropzone
+var dropzone = document.getElementById('dropzone');
+var fileInput = document.getElementById('file-input');
+
+dropzone.addEventListener('click', function() { fileInput.click(); });
+dropzone.addEventListener('dragover', function(e) { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', function() { dropzone.classList.remove('dragover'); });
+dropzone.addEventListener('drop', function(e) {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  var file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+});
+fileInput.addEventListener('change', function() {
+  if (fileInput.files[0]) processFile(fileInput.files[0]);
+});
+
+function processFile(file) {
+  var ext = file.name.split('.').pop().toLowerCase();
+  if (ext !== 'xls' && ext !== 'xlsx') {
+    alert('Format non support\u00e9. Utilisez un fichier .xls ou .xlsx');
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var wb = XLSX.read(e.target.result, { type: 'array' });
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var data = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      parsePatients(data, file.name);
+    } catch (err) {
+      alert('Erreur de lecture du fichier : ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function findColumn(headers, candidates) {
+  for (var i = 0; i < candidates.length; i++) {
+    for (var j = 0; j < headers.length; j++) {
+      if (headers[j].toLowerCase().replace(/[^a-z0-9]/g, '').indexOf(candidates[i]) !== -1) return headers[j];
+    }
+  }
+  return null;
+}
+
+function parsePatients(data, fileName) {
+  if (!data.length) { alert('Le fichier est vide.'); return; }
+
+  var headers = Object.keys(data[0]);
+  var emailCol = findColumn(headers, ['email', 'mail', 'courriel', 'emai']);
+  var nomCol = findColumn(headers, ['nom', 'name', 'lastname', 'famil', 'naam']);
+  var prenomCol = findColumn(headers, ['prenom', 'prénom', 'firstname', 'voornaam', 'first']);
+  var genreCol = findColumn(headers, ['genre', 'civilit', 'sexe', 'gender', 'titre', 'aanspreek']);
+
+  if (!emailCol) {
+    alert('Colonne email introuvable. Colonnes d\u00e9tect\u00e9es : ' + headers.join(', '));
+    return;
+  }
+
+  importedPatients = [];
+  var re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  for (var i = 0; i < data.length; i++) {
+    var row = data[i];
+    var email = String(row[emailCol] || '').trim();
+    if (!email || !re.test(email)) continue;
+
+    var nom = nomCol ? String(row[nomCol] || '').trim() : '';
+    var prenom = prenomCol ? String(row[prenomCol] || '').trim() : '';
+    var fullName = ((prenom ? prenom + ' ' : '') + nom).trim() || email.split('@')[0];
+
+    var genre = 'madame';
+    if (genreCol) {
+      var g = String(row[genreCol] || '').trim().toLowerCase();
+      if (g === 'monsieur' || g === 'mr' || g === 'mr.' || g === 'm' || g === 'm.' || g === 'male' || g === 'homme' || g === 'dhr' || g === 'meneer' || g === 'heer') {
+        genre = 'monsieur';
+      }
+    }
+
+    importedPatients.push({
+      name: fullName,
+      email: email,
+      genre: genre,
+      langue: 'fr',
+      status: 'pending'
+    });
+  }
+
+  if (!importedPatients.length) {
+    alert('Aucun patient avec email valide trouv\u00e9.');
+    return;
+  }
+
+  // Show file info
+  document.getElementById('import-upload').style.display = 'none';
+  var infoEl = document.getElementById('import-file-info');
+  infoEl.style.display = 'block';
+  infoEl.innerHTML = '<div class="file-info"><strong>' + fileName + '</strong> \u2014 ' + importedPatients.length + ' patient(s)<button class="file-clear" onclick="resetImport()">\u2715</button></div>';
+
+  document.querySelector('.card').classList.add('wide');
+  renderPatientList();
+}
+
+function renderPatientList() {
+  var listEl = document.getElementById('import-list');
+  listEl.style.display = 'block';
+  var plist = document.getElementById('plist');
+  plist.innerHTML = '';
+
+  var pending = 0;
+  var sent = 0;
+  var ignored = 0;
+
+  for (var i = 0; i < importedPatients.length; i++) {
+    var p = importedPatients[i];
+    if (p.status === 'pending') pending++;
+    else if (p.status === 'sent') sent++;
+    else if (p.status === 'ignored') ignored++;
+
+    var row = document.createElement('div');
+    row.className = 'prow' + (p.status === 'sent' ? ' sent' : '') + (p.status === 'ignored' ? ' ignored' : '');
+    row.id = 'prow-' + i;
+
+    var html = '<div class="prow-info"><div class="prow-name">' + escHtml(p.name) + '</div><div class="prow-email">' + escHtml(p.email) + '</div></div>';
+
+    if (p.status === 'pending') {
+      html += '<div class="prow-toggles">';
+      html += '<button class="prow-toggle' + (p.genre === 'madame' ? ' active' : '') + '" onclick="setPatientGenre(' + i + ',\'madame\',this)">Mme</button>';
+      html += '<button class="prow-toggle' + (p.genre === 'monsieur' ? ' active' : '') + '" onclick="setPatientGenre(' + i + ',\'monsieur\',this)">Mr</button>';
+      html += '</div>';
+      html += '<div class="prow-toggles">';
+      html += '<button class="prow-toggle' + (p.langue === 'fr' ? ' active' : '') + '" onclick="setPatientLangue(' + i + ',\'fr\',this)">FR</button>';
+      html += '<button class="prow-toggle' + (p.langue === 'nl' ? ' active' : '') + '" onclick="setPatientLangue(' + i + ',\'nl\',this)">NL</button>';
+      html += '<button class="prow-toggle' + (p.langue === 'en' ? ' active' : '') + '" onclick="setPatientLangue(' + i + ',\'en\',this)">EN</button>';
+      html += '</div>';
+      html += '<div class="prow-actions">';
+      html += '<button class="pbtn pbtn-send" onclick="sendOnePatient(' + i + ')">Envoyer</button>';
+      html += '<button class="pbtn pbtn-ignore" onclick="ignorePatient(' + i + ')">Ignorer</button>';
+      html += '</div>';
+    } else if (p.status === 'sent') {
+      html += '<div class="prow-status status-sent">Envoy\u00e9</div>';
+    } else if (p.status === 'ignored') {
+      html += '<div class="prow-status status-ignored">Ignor\u00e9</div>';
+    } else if (p.status === 'sending') {
+      html += '<div class="prow-status status-sending">Envoi...</div>';
+    } else if (p.status === 'error') {
+      html += '<div class="prow-status status-error">Erreur</div>';
+      html += '<div class="prow-actions"><button class="pbtn pbtn-send" onclick="sendOnePatient(' + i + ')">R\u00e9essayer</button></div>';
+    }
+
+    row.innerHTML = html;
+    plist.appendChild(row);
+  }
+
+  document.getElementById('plist-total').textContent = importedPatients.length;
+  document.getElementById('plist-pending').textContent = pending;
+
+  var btnAll = document.getElementById('btn-send-all');
+  btnAll.disabled = pending === 0;
+  if (pending === 0) btnAll.textContent = 'Tout envoy\u00e9';
+  else btnAll.textContent = 'Envoyer tout (' + pending + ')';
+
+  // Summary
+  var summaryEl = document.getElementById('import-summary');
+  if (sent > 0 || ignored > 0) {
+    summaryEl.style.display = 'block';
+    summaryEl.innerHTML = '<strong>' + sent + '</strong> envoy\u00e9(s) &middot; <strong>' + ignored + '</strong> ignor\u00e9(s) &middot; <strong>' + pending + '</strong> en attente';
+  } else {
+    summaryEl.style.display = 'none';
+  }
+}
+
+function escHtml(s) {
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function setPatientGenre(idx, genre, btn) {
+  importedPatients[idx].genre = genre;
+  var group = btn.parentElement;
+  group.querySelectorAll('.prow-toggle').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+}
+
+function setPatientLangue(idx, langue, btn) {
+  importedPatients[idx].langue = langue;
+  var group = btn.parentElement;
+  group.querySelectorAll('.prow-toggle').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+}
+
+function ignorePatient(idx) {
+  importedPatients[idx].status = 'ignored';
+  renderPatientList();
+}
+
+function sendOnePatient(idx) {
+  var p = importedPatients[idx];
+  p.status = 'sending';
+  renderPatientList();
+
+  var TIDS = { fr: 3, nl: 2, en: 1 };
+  var CIVIL = { madame: 'Madame', monsieur: 'Monsieur' };
+
+  fetch('https://cabinet-finance-api-production.up.railway.app/api/send-post-treatment', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      email: p.email,
+      templateId: TIDS[p.langue],
+      params: { CIVILITE: CIVIL[p.genre] }
+    })
+  })
+  .then(function(resp) {
+    if (resp.ok) {
+      p.status = 'sent';
+    } else {
+      p.status = 'error';
+    }
+    renderPatientList();
+  })
+  .catch(function() {
+    p.status = 'error';
+    renderPatientList();
+  });
+}
+
+function sendAllPatients() {
+  var btn = document.getElementById('btn-send-all');
+  btn.disabled = true;
+  btn.textContent = 'Envoi en cours...';
+
+  var pending = [];
+  for (var i = 0; i < importedPatients.length; i++) {
+    if (importedPatients[i].status === 'pending') pending.push(i);
+  }
+
+  var delay = 0;
+  for (var j = 0; j < pending.length; j++) {
+    (function(idx, d) {
+      setTimeout(function() { sendOnePatient(idx); }, d);
+    })(pending[j], delay);
+    delay += 300;
+  }
+}
+
+function resetImport() {
+  importedPatients = [];
+  document.getElementById('import-upload').style.display = 'block';
+  document.getElementById('import-file-info').style.display = 'none';
+  document.getElementById('import-list').style.display = 'none';
+  document.getElementById('import-summary').style.display = 'none';
+  document.querySelector('.card').classList.remove('wide');
+  fileInput.value = '';
+}
 </script>
 <a href="https://endodontie-launcher.vercel.app" style="position:fixed;bottom:24px;right:24px;z-index:9999;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;text-decoration:none;transition:all .2s;box-shadow:0 4px 20px rgba(0,0,0,0.3)" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></a>
 </body>
