@@ -151,14 +151,13 @@
     .card.wide{max-width:640px;}
   </style>
 <script>
-var state = { genre: 'madame', langue: 'fr' };
+var state = { langue: 'fr' };
 function handleSend() {
   var emailEl = document.getElementById('email-input');
   var emailVal = emailEl ? emailEl.value.trim() : '';
   var btn = document.getElementById('btn-send');
   var re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   var TIDS = { fr: 3, nl: 2, en: 1 };
-  var CIVIL = { madame: 'Madame', monsieur: 'Monsieur' };
   var LANGS = { fr: 'Francais', nl: 'Nederlands', en: 'English' };
 
   if (!emailVal || !re.test(emailVal)) {
@@ -177,13 +176,12 @@ function handleSend() {
     body: JSON.stringify({
       email: emailVal,
       templateId: TIDS[state.langue],
-      params: { CIVILITE: CIVIL[state.genre] }
+      params: {}
     })
   })
   .then(function(resp) {
     if (resp.ok) {
       document.getElementById('s-email').textContent = emailVal;
-      document.getElementById('s-genre').textContent = CIVIL[state.genre];
       document.getElementById('s-langue').textContent = LANGS[state.langue];
       document.getElementById('form-view').style.display = 'none';
       document.getElementById('success-view').classList.add('visible');
@@ -360,18 +358,11 @@ function handleSend() {
 
       <!-- ── TAB: MANUAL (existing form) ── -->
       <div class="tab-panel" id="tab-manual">
-      <p class="cdesc" style="margin-bottom:16px;">Renseignez l'adresse email, le genre et la langue du patient.</p>
+      <p class="cdesc" style="margin-bottom:16px;">Renseignez l'adresse email et la langue du patient.</p>
       <div id="form-view">
         <div class="fg">
           <label class="fl">Adresse email du patient</label>
           <input type="email" id="email-input" placeholder="patient@exemple.com" autocomplete="off"/>
-        </div>
-        <div class="fg">
-          <label class="fl">Genre</label>
-          <div class="tg" id="genre-group">
-            <button class="tb active" data-value="madame" onclick="document.querySelectorAll('#genre-group .tb').forEach(b=>b.classList.remove('active'));this.classList.add('active');state.genre='madame';">Madame</button>
-            <button class="tb" data-value="monsieur" onclick="document.querySelectorAll('#genre-group .tb').forEach(b=>b.classList.remove('active'));this.classList.add('active');state.genre='monsieur';">Monsieur</button>
-          </div>
         </div>
         <div class="fg">
           <label class="fl">Langue</label>
@@ -386,7 +377,7 @@ function handleSend() {
       <div class="sstate" id="success-view">
         <div class="si">&#10003;</div>
         <div class="st">Email envoy&eacute; !</div>
-        <p class="ss">Envoy&eacute; &agrave; <strong id="s-email"></strong><br><strong id="s-genre"></strong> &middot; <strong id="s-langue"></strong></p>
+        <p class="ss">Envoy&eacute; &agrave; <strong id="s-email"></strong><br><strong id="s-langue"></strong></p>
         <button class="btn-reset" id="btn-reset">&#8629; Nouveau patient</button>
       </div>
       </div><!-- /tab-manual -->
@@ -459,7 +450,7 @@ document.getElementById('enter-btn').addEventListener('click', function() {
 });
 
 /* ── TOGGLES ── */
-var state = { genre: 'madame', langue: 'fr' };
+var state = { langue: 'fr' };
 
 function setupToggle(groupId, key) {
   var group = document.getElementById(groupId);
@@ -472,13 +463,11 @@ function setupToggle(groupId, key) {
     });
   });
 }
-setupToggle('genre-group', 'genre');
 setupToggle('langue-group', 'langue');
 
 /* ── SEND ── */
 var TIDS  = { fr: 3, nl: 5, en: 6 };
 var LANGS = { fr: 'Francais', nl: 'Nederlands', en: 'English' };
-var CIVIL = { madame: 'Madame', monsieur: 'Monsieur' };
 
 function handleSend() {
   var emailEl = document.getElementById('email-input');
@@ -502,13 +491,12 @@ function handleSend() {
     body: JSON.stringify({
       email: emailVal,
       templateId: TIDS[state.langue],
-      params: { CIVILITE: CIVIL[state.genre] }
+      params: {}
     })
   })
   .then(function(resp) {
     if (resp.ok) {
       document.getElementById('s-email').textContent  = emailVal;
-      document.getElementById('s-genre').textContent  = CIVIL[state.genre];
       document.getElementById('s-langue').textContent = LANGS[state.langue];
       document.getElementById('form-view').style.display = 'none';
       document.getElementById('success-view').classList.add('visible');
@@ -537,7 +525,7 @@ document.getElementById('btn-reset').addEventListener('click', function() {
   btn.disabled = false;
   btn.classList.remove('loading');
   btn.textContent = "Envoyer l\'email post-traitement";
-  state = { genre: 'madame', langue: 'fr' };
+  state = { langue: 'fr' };
 });
 
 /* ── TABS ── */
@@ -610,8 +598,6 @@ function parsePatients(data, fileName) {
   var emailCol = findColumn(headers, ['email', 'mail', 'courriel', 'emai']);
   var nomCol = findColumn(headers, ['nom', 'name', 'lastname', 'famil', 'naam']);
   var prenomCol = findColumn(headers, ['prenom', 'prénom', 'firstname', 'voornaam', 'first']);
-  var genreCol = findColumn(headers, ['genre', 'civilit', 'sexe', 'gender', 'titre', 'aanspreek']);
-
   if (!emailCol) {
     alert('Colonne email introuvable. Colonnes d\u00e9tect\u00e9es : ' + headers.join(', '));
     return;
@@ -629,18 +615,9 @@ function parsePatients(data, fileName) {
     var prenom = prenomCol ? String(row[prenomCol] || '').trim() : '';
     var fullName = ((prenom ? prenom + ' ' : '') + nom).trim() || email.split('@')[0];
 
-    var genre = 'madame';
-    if (genreCol) {
-      var g = String(row[genreCol] || '').trim().toLowerCase();
-      if (g === 'monsieur' || g === 'mr' || g === 'mr.' || g === 'm' || g === 'm.' || g === 'male' || g === 'homme' || g === 'dhr' || g === 'meneer' || g === 'heer') {
-        genre = 'monsieur';
-      }
-    }
-
     importedPatients.push({
       name: fullName,
       email: email,
-      genre: genre,
       langue: 'fr',
       status: 'pending'
     });
@@ -684,10 +661,6 @@ function renderPatientList() {
     var html = '<div class="prow-info"><div class="prow-name">' + escHtml(p.name) + '</div><div class="prow-email">' + escHtml(p.email) + '</div></div>';
 
     if (p.status === 'pending') {
-      html += '<div class="prow-toggles">';
-      html += '<button class="prow-toggle' + (p.genre === 'madame' ? ' active' : '') + '" onclick="setPatientGenre(' + i + ',\'madame\',this)">Mme</button>';
-      html += '<button class="prow-toggle' + (p.genre === 'monsieur' ? ' active' : '') + '" onclick="setPatientGenre(' + i + ',\'monsieur\',this)">Mr</button>';
-      html += '</div>';
       html += '<div class="prow-toggles">';
       html += '<button class="prow-toggle' + (p.langue === 'fr' ? ' active' : '') + '" onclick="setPatientLangue(' + i + ',\'fr\',this)">FR</button>';
       html += '<button class="prow-toggle' + (p.langue === 'nl' ? ' active' : '') + '" onclick="setPatientLangue(' + i + ',\'nl\',this)">NL</button>';
@@ -736,13 +709,6 @@ function escHtml(s) {
   return d.innerHTML;
 }
 
-function setPatientGenre(idx, genre, btn) {
-  importedPatients[idx].genre = genre;
-  var group = btn.parentElement;
-  group.querySelectorAll('.prow-toggle').forEach(function(b) { b.classList.remove('active'); });
-  btn.classList.add('active');
-}
-
 function setPatientLangue(idx, langue, btn) {
   importedPatients[idx].langue = langue;
   var group = btn.parentElement;
@@ -760,8 +726,7 @@ function sendOnePatient(idx) {
   p.status = 'sending';
   renderPatientList();
 
-  var TIDS = { fr: 3, nl: 2, en: 1 };
-  var CIVIL = { madame: 'Madame', monsieur: 'Monsieur' };
+  var TIDS = { fr: 3, nl: 5, en: 6 };
 
   fetch('https://cabinet-finance-api-production.up.railway.app/api/send-post-treatment', {
     method: 'POST',
@@ -769,7 +734,7 @@ function sendOnePatient(idx) {
     body: JSON.stringify({
       email: p.email,
       templateId: TIDS[p.langue],
-      params: { CIVILITE: CIVIL[p.genre] }
+      params: {}
     })
   })
   .then(function(resp) {
