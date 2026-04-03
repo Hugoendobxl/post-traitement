@@ -176,7 +176,7 @@ function handleSend() {
     body: JSON.stringify({
       email: emailVal,
       templateId: TIDS[state.langue],
-      params: {}
+      params: { CIVILITE: '' }
     })
   })
   .then(function(resp) {
@@ -491,7 +491,7 @@ function handleSend() {
     body: JSON.stringify({
       email: emailVal,
       templateId: TIDS[state.langue],
-      params: {}
+      params: { CIVILITE: '' }
     })
   })
   .then(function(resp) {
@@ -734,7 +734,7 @@ function sendOnePatient(idx) {
     body: JSON.stringify({
       email: p.email,
       templateId: TIDS[p.langue],
-      params: {}
+      params: { CIVILITE: '' }
     })
   })
   .then(function(resp) {
