@@ -254,7 +254,7 @@ function handleSend() {
         if(entry===PIN){
           var ps=document.getElementById('pin-screen');
           ps.style.opacity='0';
-          setTimeout(function(){ps.style.display='none';},400);
+          setTimeout(function(){ps.style.display='none';document.getElementById('landing').style.display='none';document.getElementById('module-page').classList.add('visible');},400);
         } else {
           document.getElementById('pin-err').textContent='Code incorrect \u2014 r\u00e9essayez';
           entry='';
