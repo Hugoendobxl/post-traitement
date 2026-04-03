@@ -150,53 +150,6 @@
     /* ── RESPONSIVE CARD WIDER FOR IMPORT ── */
     .card.wide{max-width:640px;}
   </style>
-<script>
-var state = { langue: 'fr' };
-function handleSend() {
-  var emailEl = document.getElementById('email-input');
-  var emailVal = emailEl ? emailEl.value.trim() : '';
-  var btn = document.getElementById('btn-send');
-  var re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  var TIDS = { fr: 3, nl: 2, en: 1 };
-  var LANGS = { fr: 'Francais', nl: 'Nederlands', en: 'English' };
-
-  if (!emailVal || !re.test(emailVal)) {
-    emailEl.classList.add('error');
-    setTimeout(function() { emailEl.classList.remove('error'); }, 600);
-    return;
-  }
-
-  btn.classList.add('loading');
-  btn.textContent = 'Envoi en cours...';
-  btn.disabled = true;
-
-  fetch('https://cabinet-finance-api-production.up.railway.app/api/send-post-treatment', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      email: emailVal,
-      templateId: TIDS[state.langue],
-      params: { CIVILITE: '' }
-    })
-  })
-  .then(function(resp) {
-    if (resp.ok) {
-      document.getElementById('s-email').textContent = emailVal;
-      document.getElementById('s-langue').textContent = LANGS[state.langue];
-      document.getElementById('form-view').style.display = 'none';
-      document.getElementById('success-view').classList.add('visible');
-    } else {
-      throw new Error('Erreur envoi');
-    }
-  })
-  .catch(function(e) {
-    btn.classList.remove('loading');
-    btn.textContent = "Envoyer l\'email post-traitement";
-    btn.disabled = false;
-    alert('Erreur : ' + e.message);
-  });
-}
-</script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
