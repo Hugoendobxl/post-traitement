@@ -262,7 +262,7 @@ function handleSend() {
         <div class="si">&#10003;</div>
         <div class="st">Email envoy&eacute; !</div>
         <p class="ss">Envoy&eacute; &agrave; <strong id="s-email"></strong><br><strong id="s-genre"></strong> &middot; <strong id="s-langue"></strong></p>
-        <button class="btn-reset" id="btn-reset" onclick="document.getElementById('success-view').classList.remove('visible');document.getElementById('form-view').style.display='block';">&#8629; Nouveau patient</button>
+        <button class="btn-reset" id="btn-reset">&#8629; Nouveau patient</button>
       </div>
       </div><!-- /tab-manual -->
     </div>
@@ -408,6 +408,10 @@ document.getElementById('btn-reset').addEventListener('click', function() {
   document.getElementById('email-input').value = '';
   document.getElementById('form-view').style.display = 'block';
   document.getElementById('success-view').classList.remove('visible');
+  var btn = document.getElementById('btn-send');
+  btn.disabled = false;
+  btn.classList.remove('loading');
+  btn.textContent = "Envoyer l\'email post-traitement";
   state = { genre: 'madame', langue: 'fr' };
 });
 
