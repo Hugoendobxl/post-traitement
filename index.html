@@ -149,6 +149,18 @@
 
     /* ── RESPONSIVE CARD WIDER FOR IMPORT ── */
     .card.wide{max-width:640px;}
+
+    /* ── KPI CARDS ── */
+    .kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:20px;}
+    .kpi-card{background:rgba(206,147,216,0.05);border:1px solid rgba(206,147,216,0.18);border-radius:12px;padding:12px 14px;position:relative;overflow:hidden;transition:all .2s;}
+    .kpi-card:hover{background:rgba(206,147,216,0.08);border-color:rgba(206,147,216,0.3);}
+    .kpi-label{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:6px;line-height:1.3;}
+    .kpi-value{font-family:'Fraunces',Georgia,serif;font-size:22px;font-weight:600;color:#CE93D8;line-height:1;letter-spacing:-0.5px;}
+    .kpi-sub{font-size:10px;color:rgba(255,255,255,.35);margin-top:4px;letter-spacing:.3px;}
+    .kpi-sub .star{color:#FFC857;}
+    .kpi-card.loading .kpi-value{color:rgba(255,255,255,.2);}
+    .kpi-title{font-size:10px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+    .kpi-title::before,.kpi-title::after{content:'';flex:1;height:1px;background:rgba(206,147,216,.15);}
   </style>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
@@ -279,6 +291,32 @@
     </div>
     <div class="cbody">
       <div class="top-rule"></div>
+
+      <!-- ── KPI CARDS ── -->
+      <div class="kpi-title">Statistiques</div>
+      <div class="kpi-grid">
+        <div class="kpi-card" id="kpi-sent">
+          <div class="kpi-label">Mails envoy&eacute;s</div>
+          <div class="kpi-value" id="kpi-sent-val">0</div>
+          <div class="kpi-sub">depuis le d&eacute;but</div>
+        </div>
+        <div class="kpi-card loading" id="kpi-clicks">
+          <div class="kpi-label">Clics lien avis</div>
+          <div class="kpi-value" id="kpi-clicks-val">&mdash;</div>
+          <div class="kpi-sub" id="kpi-clicks-sub">via Brevo</div>
+        </div>
+        <div class="kpi-card loading" id="kpi-reviews-new">
+          <div class="kpi-label">Avis Google (appli)</div>
+          <div class="kpi-value" id="kpi-reviews-new-val">&mdash;</div>
+          <div class="kpi-sub" id="kpi-reviews-new-sub">depuis le d&eacute;but</div>
+        </div>
+        <div class="kpi-card loading" id="kpi-reviews-total">
+          <div class="kpi-label">Total avis Google</div>
+          <div class="kpi-value" id="kpi-reviews-total-val">&mdash;</div>
+          <div class="kpi-sub" id="kpi-reviews-total-sub">tous avis</div>
+        </div>
+      </div>
+
       <div class="mlabel">Envoi automatique</div>
       <h1 class="ctitle">Email post-traitement</h1>
       <p class="cdesc">Importez la liste du jour ou envoyez manuellement.</p>
@@ -418,6 +456,98 @@ function setupToggle(groupId, key) {
 }
 setupToggle('langue-group', 'langue');
 
+/* ── KPI : COMPTEUR LOCAL + STATS DISTANTES ── */
+var KPI_KEY = 'el_kpi_sent_total';
+var KPI_API = 'https://cabinet-finance-api-production.up.railway.app/api/kpi-stats';
+
+function kpiGetSent() {
+  var v = parseInt(localStorage.getItem(KPI_KEY) || '0', 10);
+  return isNaN(v) ? 0 : v;
+}
+function kpiIncrSent() {
+  var v = kpiGetSent() + 1;
+  localStorage.setItem(KPI_KEY, String(v));
+  kpiRenderSent();
+}
+function kpiRenderSent() {
+  document.getElementById('kpi-sent-val').textContent = kpiGetSent().toLocaleString('fr-FR');
+}
+function kpiLoadRemote() {
+  fetch(KPI_API, { method: 'GET' })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(d) {
+      if (!d) return;
+      // Expected shape:
+      // { brevoClicks: number,
+      //   googleReviewsSinceStart: { count: number, average: number },
+      //   googleReviewsTotal: { count: number, average: number } }
+      if (typeof d.brevoClicks === 'number') {
+        document.getElementById('kpi-clicks-val').textContent = d.brevoClicks.toLocaleString('fr-FR');
+        document.getElementById('kpi-clicks').classList.remove('loading');
+      }
+      if (d.googleReviewsSinceStart && typeof d.googleReviewsSinceStart.count === 'number') {
+        var s = d.googleReviewsSinceStart;
+        document.getElementById('kpi-reviews-new-val').textContent = s.count.toLocaleString('fr-FR');
+        if (typeof s.average === 'number') {
+          document.getElementById('kpi-reviews-new-sub').innerHTML = '<span class="star">&#9733;</span> ' + s.average.toFixed(1) + ' / 5';
+        }
+        document.getElementById('kpi-reviews-new').classList.remove('loading');
+      }
+      if (d.googleReviewsTotal && typeof d.googleReviewsTotal.count === 'number') {
+        var t = d.googleReviewsTotal;
+        document.getElementById('kpi-reviews-total-val').textContent = t.count.toLocaleString('fr-FR');
+        if (typeof t.average === 'number') {
+          document.getElementById('kpi-reviews-total-sub').innerHTML = '<span class="star">&#9733;</span> ' + t.average.toFixed(1) + ' / 5';
+        }
+        document.getElementById('kpi-reviews-total').classList.remove('loading');
+      }
+    })
+    .catch(function() { /* silent — placeholders restent */ });
+}
+kpiRenderSent();
+kpiLoadRemote();
+setInterval(kpiLoadRemote, 5 * 60 * 1000); // refresh toutes les 5 min
+
+/* ── RGPD : EFFACEMENT AUTOMATIQUE DE LA LISTE PATIENTS ── */
+function wipePatientData() {
+  importedPatients = [];
+  try {
+    var plist = document.getElementById('plist');
+    if (plist) plist.innerHTML = '';
+    var listEl = document.getElementById('import-list');
+    if (listEl) listEl.style.display = 'none';
+    var infoEl = document.getElementById('import-file-info');
+    if (infoEl) { infoEl.style.display = 'none'; infoEl.innerHTML = ''; }
+    var upEl = document.getElementById('import-upload');
+    if (upEl) upEl.style.display = 'block';
+    var sEl = document.getElementById('import-summary');
+    if (sEl) sEl.style.display = 'none';
+    var card = document.querySelector('.card');
+    if (card) card.classList.remove('wide');
+    var fi = document.getElementById('file-input');
+    if (fi) fi.value = '';
+  } catch (e) {}
+}
+function scheduleMidnightWipe() {
+  var now = new Date();
+  var next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5);
+  var ms = next.getTime() - now.getTime();
+  setTimeout(function() {
+    wipePatientData();
+    scheduleMidnightWipe();
+  }, ms);
+}
+scheduleMidnightWipe();
+// Si l'onglet reste ouvert et qu'on passe un jour, wipe au retour au premier plan
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden && importedPatients.length > 0) {
+    var today = new Date().toDateString();
+    if (window.__importDay && window.__importDay !== today) wipePatientData();
+  }
+});
+// Effacement à la fermeture de l'onglet
+window.addEventListener('beforeunload', function() { wipePatientData(); });
+
 /* ── SEND ── */
 var TIDS  = { fr: 3, nl: 5, en: 6 };
 var LANGS = { fr: 'Francais', nl: 'Nederlands', en: 'English' };
@@ -449,6 +579,7 @@ function handleSend() {
   })
   .then(function(resp) {
     if (resp.ok) {
+      kpiIncrSent();
       document.getElementById('s-email').textContent  = emailVal;
       document.getElementById('s-langue').textContent = LANGS[state.langue];
       document.getElementById('form-view').style.display = 'none';
@@ -581,6 +712,8 @@ function parsePatients(data, fileName) {
     return;
   }
 
+  window.__importDay = new Date().toDateString();
+
   // Show file info
   document.getElementById('import-upload').style.display = 'none';
   var infoEl = document.getElementById('import-file-info');
@@ -693,6 +826,7 @@ function sendOnePatient(idx) {
   .then(function(resp) {
     if (resp.ok) {
       p.status = 'sent';
+      kpiIncrSent();
     } else {
       p.status = 'error';
     }
