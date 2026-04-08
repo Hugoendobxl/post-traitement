@@ -295,21 +295,25 @@ function setupToggle(groupId, key) {
 }
 setupToggle('langue-group', 'langue');
 
-/* ── KPI : COMPTEUR LOCAL + STATS DISTANTES ── */
-var KPI_KEY = 'el_kpi_sent_total';
+/* ── KPI : COMPTEUR PARTAGÉ + STATS DISTANTES ── */
+var PT_API = 'https://cabinet-finance-api-production.up.railway.app/api/post-traitement';
 var KPI_API = 'https://cabinet-finance-api-production.up.railway.app/api/kpi-stats';
+var kpiSentCount = 0;
 
-function kpiGetSent() {
-  var v = parseInt(localStorage.getItem(KPI_KEY) || '0', 10);
-  return isNaN(v) ? 0 : v;
-}
+function kpiGetSent() { return kpiSentCount; }
 function kpiIncrSent() {
-  var v = kpiGetSent() + 1;
-  localStorage.setItem(KPI_KEY, String(v));
+  kpiSentCount++;
   kpiRenderSent();
+  fetch(PT_API + '/kpi-sent/increment', { method: 'POST', headers: { 'Content-Type': 'application/json' } }).catch(function() {});
 }
 function kpiRenderSent() {
   document.getElementById('kpi-sent-val').textContent = kpiGetSent().toLocaleString('fr-FR');
+}
+function kpiLoadSent() {
+  fetch(PT_API + '/kpi-sent').then(function(r) { return r.json(); }).then(function(d) {
+    kpiSentCount = d.count || 0;
+    kpiRenderSent();
+  }).catch(function() {});
 }
 function kpiLoadRemote() {
   fetch(KPI_API, { method: 'GET' })
@@ -343,7 +347,7 @@ function kpiLoadRemote() {
     })
     .catch(function() { /* silent — placeholders restent */ });
 }
-kpiRenderSent();
+kpiLoadSent();
 kpiLoadRemote();
 setInterval(kpiLoadRemote, 5 * 60 * 1000); // refresh toutes les 5 min
 
@@ -468,6 +472,30 @@ function switchTab(tab) {
 /* ── IMPORT XLSX ── */
 var importedPatients = [];
 
+/* ── SYNC PATIENTS WITH SERVER ── */
+function syncPatientsToServer() {
+  fetch(PT_API + '/patients', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ patients: importedPatients })
+  }).catch(function() {});
+}
+function loadPatientsFromServer() {
+  fetch(PT_API + '/patients').then(function(r) { return r.json(); }).then(function(d) {
+    if (d.patients && d.patients.length > 0) {
+      importedPatients = d.patients;
+      window.__importDay = new Date().toDateString();
+      document.getElementById('import-upload').style.display = 'none';
+      var infoEl = document.getElementById('import-file-info');
+      infoEl.style.display = 'block';
+      infoEl.innerHTML = '<div class="file-info"><strong>Liste du jour</strong> \u2014 ' + importedPatients.length + ' patient(s)<button class="file-clear" onclick="resetImport()">\u2715</button></div>';
+      document.querySelector('.card').classList.add('wide');
+      renderPatientList();
+    }
+  }).catch(function() {});
+}
+loadPatientsFromServer();
+
 // Dropzone
 var dropzone = document.getElementById('dropzone');
 var fileInput = document.getElementById('file-input');
@@ -561,6 +589,7 @@ function parsePatients(data, fileName) {
 
   document.querySelector('.card').classList.add('wide');
   renderPatientList();
+  syncPatientsToServer();
 }
 
 function renderPatientList() {
@@ -644,6 +673,7 @@ function setPatientLangue(idx, langue, btn) {
 function ignorePatient(idx) {
   importedPatients[idx].status = 'ignored';
   renderPatientList();
+  syncPatientsToServer();
 }
 
 function sendOnePatient(idx) {
@@ -670,6 +700,7 @@ function sendOnePatient(idx) {
       p.status = 'error';
     }
     renderPatientList();
+    syncPatientsToServer();
   })
   .catch(function() {
     p.status = 'error';
@@ -698,6 +729,7 @@ function sendAllPatients() {
 
 function resetImport() {
   importedPatients = [];
+  syncPatientsToServer();
   document.getElementById('import-upload').style.display = 'block';
   document.getElementById('import-file-info').style.display = 'none';
   document.getElementById('import-list').style.display = 'none';
