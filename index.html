@@ -94,6 +94,8 @@
     .prow-info{flex:1;min-width:0;}
     .prow-name{font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .prow-email{font-size:11px;color:#6B6560;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .prow-dentiste{width:120px;flex-shrink:0;font-size:11px;font-weight:600;color:#6C5CE7;text-align:center;padding:4px 8px;background:rgba(108,92,231,0.06);border:1px solid rgba(108,92,231,0.15);border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .prow-dentiste:empty{display:none;}
     .prow-toggles{display:flex;gap:4px;flex-shrink:0;}
     .prow-toggle{padding:4px 8px;border:1px solid #ECEAE4;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;color:#9B9590;background:transparent;cursor:pointer;transition:all .15s;}
     .prow-toggle.active{background:#F0EEFF;color:#6C5CE7;border-color:rgba(108,92,231,0.35);}
@@ -549,6 +551,7 @@ function parsePatients(data, fileName) {
   var emailCol = findColumn(headers, ['email', 'mail', 'courriel', 'emai']);
   var nomCol = findColumn(headers, ['nom', 'name', 'lastname', 'famil', 'naam']);
   var prenomCol = findColumn(headers, ['prenom', 'prénom', 'firstname', 'voornaam', 'first']);
+  var stoelCol = findColumn(headers, ['stoel', 'dentist', 'praticien', 'chaise']);
   if (!emailCol) {
     alert('Colonne email introuvable. Colonnes d\u00e9tect\u00e9es : ' + headers.join(', '));
     return;
@@ -564,10 +567,12 @@ function parsePatients(data, fileName) {
 
     var nom = nomCol ? String(row[nomCol] || '').trim() : '';
     var prenom = prenomCol ? String(row[prenomCol] || '').trim() : '';
-    var fullName = ((prenom ? prenom + ' ' : '') + nom).trim() || email.split('@')[0];
+    var fullName = (nom + (prenom ? ' ' + prenom : '')).trim() || email.split('@')[0];
+    var dentiste = stoelCol ? String(row[stoelCol] || '').trim() : '';
 
     importedPatients.push({
       name: fullName,
+      dentiste: dentiste,
       email: email,
       langue: 'fr',
       status: 'pending'
@@ -613,6 +618,7 @@ function renderPatientList() {
     row.id = 'prow-' + i;
 
     var html = '<div class="prow-info"><div class="prow-name">' + escHtml(p.name) + '</div><div class="prow-email">' + escHtml(p.email) + '</div></div>';
+    html += '<div class="prow-dentiste">' + (p.dentiste ? escHtml(p.dentiste) : '') + '</div>';
 
     if (p.status === 'pending') {
       html += '<div class="prow-toggles">';
