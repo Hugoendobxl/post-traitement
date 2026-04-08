@@ -557,9 +557,15 @@ function parsePatients(data, fileName) {
   console.log('COLONNES DETECTEES:', headers);
   console.log('PREMIERE LIGNE:', data[0]);
   var emailCol = findColumn(headers, ['email', 'mail', 'courriel', 'emai']);
-  var nomCol = findColumn(headers, ['nom', 'name', 'lastname', 'famil', 'naam']);
-  var prenomCol = findColumn(headers, ['prenom', 'prénom', 'firstname', 'voornaam', 'first']);
   var stoelCol = findColumn(headers, ['stoel', 'dentist', 'praticien', 'chaise']);
+  // Match exact column names to avoid "Prénom" matching "nom"
+  var nomCol = null;
+  var prenomCol = null;
+  for (var h = 0; h < headers.length; h++) {
+    var hLow = headers[h].toLowerCase().trim();
+    if (hLow === 'nom' || hLow === 'naam' || hLow === 'name' || hLow === 'lastname') nomCol = headers[h];
+    if (hLow === 'prénom' || hLow === 'prenom' || hLow === 'voornaam' || hLow === 'firstname' || hLow === 'first') prenomCol = headers[h];
+  }
   console.log('COLONNES TROUVEES:', {email: emailCol, nom: nomCol, prenom: prenomCol, stoel: stoelCol});
   if (!emailCol) {
     alert('Colonne email introuvable. Colonnes d\u00e9tect\u00e9es : ' + headers.join(', '));
