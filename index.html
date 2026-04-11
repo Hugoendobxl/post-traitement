@@ -224,7 +224,7 @@
   <div style="max-width:420px;padding:40px;text-align:center;">
     <h1>Post-Traitement</h1>
     <p class="sub">Cabinet Endodontie Louise</p>
-    <input id="pt-pin-input" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*" placeholder="••••" autofocus autocomplete="off" />
+    <input id="pt-pin-input" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]*" placeholder="••••••" autofocus autocomplete="off" />
     <div id="pt-pin-error"></div>
   </div>
 </div>
@@ -250,10 +250,10 @@
       return;
     }
 
-    // Auto-submit quand 4 chiffres entrés
+    // Auto-submit quand 6 chiffres entrés
     input.addEventListener('input', function(e) {
       errorEl.textContent = '';
-      if (e.target.value.length === 4) {
+      if (e.target.value.length === 6) {
         submitPin(e.target.value);
       }
     });
