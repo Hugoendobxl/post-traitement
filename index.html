@@ -526,17 +526,27 @@ var PT_API = 'https://cabinet-finance-api-production.up.railway.app/api/post-tra
 var KPI_API = 'https://cabinet-finance-api-production.up.railway.app/api/kpi-stats';
 var kpiSentCount = 0;
 
+// ═══ Helper auth — ajoute Authorization si un token PIN est présent ═══
+// Utilisé pour tous les appels vers les routes cabinet-finance-api
+// protégées par requirePinToken (post-traitement/* et send-post-treatment).
+function authHeaders() {
+  var token = localStorage.getItem('pt_auth_token');
+  var h = { 'Content-Type': 'application/json' };
+  if (token) h['Authorization'] = 'Bearer ' + token;
+  return h;
+}
+
 function kpiGetSent() { return kpiSentCount; }
 function kpiIncrSent() {
   kpiSentCount++;
   kpiRenderSent();
-  fetch(PT_API + '/kpi-sent/increment', { method: 'POST', headers: { 'Content-Type': 'application/json' } }).catch(function() {});
+  fetch(PT_API + '/kpi-sent/increment', { method: 'POST', headers: authHeaders() }).catch(function() {});
 }
 function kpiRenderSent() {
   document.getElementById('kpi-sent-val').textContent = kpiGetSent().toLocaleString('fr-FR');
 }
 function kpiLoadSent() {
-  fetch(PT_API + '/kpi-sent').then(function(r) { return r.json(); }).then(function(d) {
+  fetch(PT_API + '/kpi-sent', { headers: authHeaders() }).then(function(r) { return r.json(); }).then(function(d) {
     kpiSentCount = d.count || 0;
     kpiRenderSent();
   }).catch(function() {});
@@ -639,7 +649,7 @@ function handleSend() {
 
   fetch('https://cabinet-finance-api-production.up.railway.app/api/send-post-treatment', {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({
       email: emailVal,
       templateId: TIDS[state.langue],
@@ -703,12 +713,12 @@ var filterDentiste = '';
 function syncPatientsToServer() {
   fetch(PT_API + '/patients', {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({ patients: importedPatients })
   }).catch(function() {});
 }
 function loadPatientsFromServer() {
-  fetch(PT_API + '/patients').then(function(r) { return r.json(); }).then(function(d) {
+  fetch(PT_API + '/patients', { headers: authHeaders() }).then(function(r) { return r.json(); }).then(function(d) {
     if (d.patients && d.patients.length > 0) {
       importedPatients = d.patients;
       window.__importDay = new Date().toDateString();
@@ -949,7 +959,7 @@ function sendOnePatient(idx) {
 
   fetch('https://cabinet-finance-api-production.up.railway.app/api/send-post-treatment', {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({
       email: p.email,
       templateId: TIDS[p.langue],
