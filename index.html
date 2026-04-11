@@ -206,8 +206,90 @@
     .kpi-title::before,.kpi-title::after{content:'';flex:1;height:1px;background:#ECEAE4;}
   </style>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+  /* PIN gate overlay */
+  #pt-pin-gate{position:fixed;inset:0;background:#020d14;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;color:#fff;}
+  #pt-pin-gate h1{font-size:28px;font-weight:700;color:#CE93D8;margin-bottom:8px;}
+  #pt-pin-gate p.sub{font-size:13px;color:#888;margin-bottom:32px;letter-spacing:1px;text-transform:uppercase;}
+  #pt-pin-input{width:200px;padding:18px 0;text-align:center;font-size:28px;letter-spacing:16px;font-family:'DM Mono',monospace;background:transparent;border:1px solid #333;border-radius:10px;color:#fff;outline:none;transition:border-color .2s;}
+  #pt-pin-input:focus{border-color:#CE93D8;}
+  #pt-pin-input:disabled{opacity:.5;}
+  #pt-pin-error{color:#EF4444;font-size:12px;margin-top:14px;min-height:18px;letter-spacing:.5px;}
+</style>
 </head>
 <body>
+
+<!-- ═══ PIN GATE ═══ Protection d'accès avant révélation du module -->
+<div id="pt-pin-gate">
+  <div style="max-width:420px;padding:40px;text-align:center;">
+    <h1>Post-Traitement</h1>
+    <p class="sub">Cabinet Endodontie Louise</p>
+    <input id="pt-pin-input" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*" placeholder="••••" autofocus autocomplete="off" />
+    <div id="pt-pin-error"></div>
+  </div>
+</div>
+
+<script>
+  // ═══ PIN GATE LOGIC ═══
+  // Vérifie le PIN contre traitements-referents-api (qui a PIN_HASH sur Railway).
+  // Si OK, stocke un flag localStorage et révèle le module. Sinon, reste bloqué.
+  (function(){
+    var AUTH_KEY = 'pt_auth_token';
+    var API_VERIFY = 'https://traitements-referents-api-production.up.railway.app/api/auth/verify';
+    var gate = document.getElementById('pt-pin-gate');
+    var input = document.getElementById('pt-pin-input');
+    var errorEl = document.getElementById('pt-pin-error');
+
+    function unlock() {
+      gate.style.display = 'none';
+    }
+
+    // Si token existant, on débloque immédiatement
+    if (localStorage.getItem(AUTH_KEY)) {
+      unlock();
+      return;
+    }
+
+    // Auto-submit quand 4 chiffres entrés
+    input.addEventListener('input', function(e) {
+      errorEl.textContent = '';
+      if (e.target.value.length === 4) {
+        submitPin(e.target.value);
+      }
+    });
+
+    function submitPin(pin) {
+      input.disabled = true;
+      errorEl.textContent = '';
+      fetch(API_VERIFY, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ pin: pin })
+      }).then(function(res){
+        if (res.ok) {
+          return res.json().then(function(data){
+            if (data && data.token) {
+              localStorage.setItem(AUTH_KEY, data.token);
+              unlock();
+            } else {
+              showError('Code incorrect');
+            }
+          });
+        }
+        showError('Code incorrect');
+      }).catch(function(){
+        showError('Erreur réseau');
+      });
+    }
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+      input.value = '';
+      input.disabled = false;
+      input.focus();
+    }
+  })();
+</script>
 
 <div id="module-page">
   <canvas id="bg2"></canvas>
