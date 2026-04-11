@@ -20,7 +20,8 @@ Frontend pour les assistantes : envoi d'emails post-opératoires aux patients ap
 - **Framework** : **aucun** — fichier HTML autonome unique (`index.html`, ~1149 lignes, ~151 KB) avec HTML + CSS + JS inline (vanilla, syntaxe ES5 `var`)
 - **Build** : aucun
 - **Hébergement** : Vercel (déploiement direct du fichier statique)
-- **Authentification** : ⚠️ **AUCUNE** au niveau du module (le frontend est accessible sans PIN). La sécurité repose sur le fait que personne ne connaît l'URL hors du cabinet.
+- **Authentification** : 🔒 **PIN gate inline** (depuis le 2026-04-11) — overlay `#pt-pin-gate` en `position:fixed z-index:99999` qui masque tout tant que le PIN n'est pas validé. Validation via `POST traitements-referents-api/api/auth/verify` (évite d'exposer un hash côté client). Persistance via `localStorage.pt_auth_token`. Voir commit `251bbaa` du 2026-04-11.
+  - ⚠️ **Limite** : les endpoints backend `/api/post-traitement/*` (servis par cabinet-finance-api) restent publics — le PIN gate ne protège que le vecteur UI. Un attaquant qui devine les URLs d'API peut toujours lire la liste des patients du jour ou déclencher un envoi d'email Brevo. À durcir dans un second temps.
 
 ## 4. Variables d'environnement
 
