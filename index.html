@@ -617,11 +617,15 @@ function scheduleMidnightWipe() {
   }, ms);
 }
 scheduleMidnightWipe();
-// Si l'onglet reste ouvert et qu'on passe un jour, wipe au retour au premier plan
+// Si l'onglet reste ouvert et qu'on passe un jour, wipe au retour au premier plan.
+// Et au retour d'onglet, refresh immédiat depuis le serveur pour voir les actions des autres postes.
 document.addEventListener('visibilitychange', function() {
-  if (!document.hidden && importedPatients.length > 0) {
-    var today = new Date().toDateString();
-    if (window.__importDay && window.__importDay !== today) wipePatientData();
+  if (!document.hidden) {
+    if (importedPatients.length > 0) {
+      var today = new Date().toDateString();
+      if (window.__importDay && window.__importDay !== today) { wipePatientData(); return; }
+    }
+    if (typeof loadPatientsFromServer === 'function') loadPatientsFromServer();
   }
 });
 // Effacement à la fermeture de l'onglet
@@ -717,10 +721,39 @@ function syncPatientsToServer() {
     body: JSON.stringify({ patients: importedPatients })
   }).catch(function() {});
 }
+// Merge serveur → local en conservant les statuts in-flight locaux (sending/error).
+function mergeServerPatients(serverList) {
+  var localByEmail = {};
+  for (var i = 0; i < importedPatients.length; i++) {
+    var lp = importedPatients[i];
+    if (lp && lp.email) localByEmail[lp.email] = lp;
+  }
+  var seen = {};
+  var merged = [];
+  for (var j = 0; j < serverList.length; j++) {
+    var sp = serverList[j];
+    if (!sp || !sp.email) { merged.push(sp); continue; }
+    seen[sp.email] = true;
+    var local = localByEmail[sp.email];
+    // Statuts locaux transitoires qu'il faut protéger (action en cours sur ce poste).
+    if (local && (local.status === 'sending' || local.status === 'error')) {
+      merged.push(local);
+    } else {
+      merged.push(sp);
+    }
+  }
+  // Patients uniquement locaux (fraîchement importés, PUT pas encore confirmé) → on les garde.
+  for (var k = 0; k < importedPatients.length; k++) {
+    var lp2 = importedPatients[k];
+    if (lp2 && lp2.email && !seen[lp2.email]) merged.push(lp2);
+  }
+  importedPatients = merged;
+}
+
 function loadPatientsFromServer() {
   fetch(PT_API + '/patients', { headers: authHeaders() }).then(function(r) { return r.json(); }).then(function(d) {
     if (d.patients && d.patients.length > 0) {
-      importedPatients = d.patients;
+      mergeServerPatients(d.patients);
       window.__importDay = new Date().toDateString();
       document.getElementById('import-upload').style.display = 'none';
       var infoEl = document.getElementById('import-file-info');
@@ -728,10 +761,15 @@ function loadPatientsFromServer() {
       infoEl.innerHTML = '<div class="file-info"><strong>Liste du jour</strong> \u2014 ' + importedPatients.length + ' patient(s)<button class="file-clear" onclick="resetImport()">\u2715</button></div>';
       document.querySelector('.card').classList.add('wide');
       renderPatientList();
+    } else if (importedPatients.length > 0 && d && Array.isArray(d.patients) && d.patients.length === 0) {
+      // Le serveur a été reset par un autre poste — on purge l'UI locale pour rester cohérent.
+      wipePatientData();
     }
   }).catch(function() {});
 }
 loadPatientsFromServer();
+// Sync multi-postes : poll toutes les 10s pour propager les actions des autres ordinateurs.
+setInterval(loadPatientsFromServer, 10000);
 
 // Dropzone
 var dropzone = document.getElementById('dropzone');
