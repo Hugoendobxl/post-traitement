@@ -761,6 +761,15 @@ function syncPatientsToServer() {
     body: JSON.stringify({ patients: importedPatients })
   }).catch(function() {});
 }
+
+// Purge explicite côté serveur — bouton "X" de l'utilisateur.
+// Le PUT vide est désormais no-op côté backend (anti-wipe accidentel), donc pour
+// réellement vider la liste partagée il faut passer par DELETE + X-Confirm-Wipe.
+function purgePatientsOnServer() {
+  var h = authHeaders();
+  h['X-Confirm-Wipe'] = 'yes';
+  fetch(PT_API + '/patients', { method: 'DELETE', headers: h }).catch(function() {});
+}
 // Merge serveur → local en conservant les statuts in-flight locaux (sending/error).
 function mergeServerPatients(serverList) {
   var localByEmail = {};
@@ -1084,7 +1093,7 @@ function sendAllPatients() {
 
 function resetImport() {
   importedPatients = [];
-  syncPatientsToServer();
+  purgePatientsOnServer(); // DELETE explicite (anciennement PUT vide, devenu no-op côté backend)
   document.getElementById('import-upload').style.display = 'block';
   document.getElementById('import-file-info').style.display = 'none';
   document.getElementById('import-list').style.display = 'none';
