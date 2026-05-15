@@ -559,9 +559,15 @@ function authHeaders() {
 // Sans ça, le frontend swallow les 401 silencieusement et le module reste
 // fonctionnellement mort avec une liste vide (incident 2026-05-15).
 // Le flag global évite plusieurs reloads simultanés si plusieurs fetchs échouent en parallèle.
+//
+// IMPORTANT : ne reload QUE si un token est présent. Si localStorage est vide
+// (PIN gate en cours de saisie), un 401 est normal et il NE FAUT PAS reload —
+// sinon on bloque l'user dans une boucle de reload qui l'empeche de saisir le
+// PIN (regression du fix initial, 2026-05-15 17h).
 var __pt_authReloading = false;
 function handleAuthFailure() {
   if (__pt_authReloading) return;
+  if (!localStorage.getItem('pt_auth_token')) return; // pas de token → PIN gate prendra le relais
   __pt_authReloading = true;
   localStorage.removeItem('pt_auth_token');
   location.reload();
