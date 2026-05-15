@@ -244,7 +244,25 @@
       gate.style.display = 'none';
     }
 
-    // Si token existant, on débloque immédiatement
+    // Validite token : 30 jours cote backend (cabinet-finance-api requirePinToken,
+    // traitements-referents-api verifyToken). On purge cote client a 29j pour eviter
+    // qu'un token expire reste en localStorage et bloque silencieusement le module.
+    // Incident 2026-05-15 : tous les postes du cabinet avaient un token du 2026-04-11
+    // (deploiement initial du PIN gate, commit 251bbaa) ; 30+ jours plus tard tous
+    // ces tokens etaient refuses par le backend mais le gate les debloquait
+    // aveuglement, donc personne n'etait reinvite a saisir le PIN. Resultat : module
+    // mort cote UI, 401 silencieux dans tous les fetch.
+    (function purgeStaleToken() {
+      var existing = localStorage.getItem(AUTH_KEY);
+      if (!existing) return;
+      var parts = existing.split('.');
+      var ts = parts.length === 2 ? parseInt(parts[0], 10) : 0;
+      var MAX_AGE_MS = 29 * 24 * 60 * 60 * 1000;
+      if (!ts || isNaN(ts) || (Date.now() - ts) >= MAX_AGE_MS) {
+        localStorage.removeItem(AUTH_KEY);
+      }
+    })();
+
     if (localStorage.getItem(AUTH_KEY)) {
       unlock();
       return;
@@ -536,6 +554,19 @@ function authHeaders() {
   return h;
 }
 
+// Filet de sécurité 401 : si le backend refuse le token (expiré, secret régénéré,
+// horloge dérivée), on purge localStorage et on recharge pour forcer la PIN gate.
+// Sans ça, le frontend swallow les 401 silencieusement et le module reste
+// fonctionnellement mort avec une liste vide (incident 2026-05-15).
+// Le flag global évite plusieurs reloads simultanés si plusieurs fetchs échouent en parallèle.
+var __pt_authReloading = false;
+function handleAuthFailure() {
+  if (__pt_authReloading) return;
+  __pt_authReloading = true;
+  localStorage.removeItem('pt_auth_token');
+  location.reload();
+}
+
 function kpiGetSent() { return kpiSentCount; }
 function kpiIncrSent() {
   kpiSentCount++;
@@ -546,7 +577,10 @@ function kpiRenderSent() {
   document.getElementById('kpi-sent-val').textContent = kpiGetSent().toLocaleString('fr-FR');
 }
 function kpiLoadSent() {
-  fetch(PT_API + '/kpi-sent', { headers: authHeaders() }).then(function(r) { return r.json(); }).then(function(d) {
+  fetch(PT_API + '/kpi-sent', { headers: authHeaders() }).then(function(r) {
+    if (r.status === 401) { handleAuthFailure(); throw new Error('auth-failure'); }
+    return r.json();
+  }).then(function(d) {
     kpiSentCount = d.count || 0;
     kpiRenderSent();
   }).catch(function() {});
@@ -751,7 +785,10 @@ function mergeServerPatients(serverList) {
 }
 
 function loadPatientsFromServer() {
-  fetch(PT_API + '/patients', { headers: authHeaders() }).then(function(r) { return r.json(); }).then(function(d) {
+  fetch(PT_API + '/patients', { headers: authHeaders() }).then(function(r) {
+    if (r.status === 401) { handleAuthFailure(); throw new Error('auth-failure'); }
+    return r.json();
+  }).then(function(d) {
     if (d.patients && d.patients.length > 0) {
       mergeServerPatients(d.patients);
       window.__importDay = new Date().toDateString();
@@ -1065,8 +1102,11 @@ function toggleReviewsFilter(filter) {
 }
 
 function loadGoogleReviews() {
-  fetch(REVIEWS_API)
-    .then(function(r) { return r.ok ? r.json() : Promise.reject('API indisponible'); })
+  fetch(REVIEWS_API, { headers: authHeaders() })
+    .then(function(r) {
+      if (r.status === 401) { handleAuthFailure(); throw new Error('auth-failure'); }
+      return r.ok ? r.json() : Promise.reject('API indisponible');
+    })
     .then(function(data) {
       reviewsData = data.reviews || [];
       renderReviewsHeader(data);
