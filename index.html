@@ -1105,7 +1105,8 @@ function resetImport() {
 /* ══════════════════════════════════════════════
    GOOGLE REVIEWS PANEL
    ══════════════════════════════════════════════ */
-var REVIEWS_API = 'https://cabinet-finance-api-production.up.railway.app/api/google-reviews';
+// ADR-020: migre vers backend dedie avis-google-api (separation par domaine)
+var REVIEWS_API = 'https://avis-google-api-production.up.railway.app/api/reviews';
 var reviewsData = [];
 var reviewsFilter = 'pending'; // 'pending' | 'replied'
 
@@ -1117,9 +1118,8 @@ function toggleReviewsFilter(filter) {
 }
 
 function loadGoogleReviews() {
-  fetch(REVIEWS_API, { headers: authHeaders() })
+  fetch(REVIEWS_API)
     .then(function(r) {
-      if (r.status === 401) { handleAuthFailure(); throw new Error('auth-failure'); }
       return r.ok ? r.json() : Promise.reject('API indisponible');
     })
     .then(function(data) {
@@ -1165,7 +1165,9 @@ function renderDistribution(dist) {
 function renderReviewsList() {
   var listEl = document.getElementById('reviews-list');
   var filtered = reviewsData.filter(function(r) {
-    return reviewsFilter === 'pending' ? r.status === 'pending' : r.status === 'replied';
+    return reviewsFilter === 'pending'
+      ? (r.status === 'new' || r.status === 'seen' || r.status === 'pending')
+      : (r.status === 'responded' || r.status === 'replied');
   });
 
   if (filtered.length === 0) {
@@ -1179,39 +1181,49 @@ function renderReviewsList() {
   var html = '';
   for (var i = 0; i < filtered.length; i++) {
     var r = filtered[i];
+    var rid = r.review_id || r.id;
     var initials = (r.author_name || '?').split(' ').map(function(w) { return w.charAt(0).toUpperCase(); }).join('').substring(0, 2);
     var starsHtml = '';
     for (var s = 1; s <= 5; s++) {
       starsHtml += '<span class="' + (s <= r.rating ? 'star-on' : 'star-off') + '">&#9733;</span>';
     }
-    var timeAgo = relativeTime(r.created_at);
+    var timeAgo = relativeTime(r.created_at_google || r.created_at);
 
-    html += '<div class="review-item" id="review-' + r.review_id + '" onclick="toggleReview(\'' + r.review_id + '\')">';
+    html += '<div class="review-item" id="review-' + rid + '" onclick="toggleReview(\'' + rid + '\')">';
     html += '<div class="review-top">';
     html += '<div class="review-avatar">' + initials + '</div>';
     html += '<div class="review-meta"><div class="review-author">' + escHtml(r.author_name || 'Anonyme') + '</div><div class="review-date">' + timeAgo + '</div></div>';
     html += '<div class="review-stars-sm">' + starsHtml + '</div>';
-    if (r.status === 'replied') html += '<span class="review-badge">&#10003; R\u00e9pondu</span>';
+    if (r.status === 'responded' || r.status === 'replied') html += '<span class="review-badge">&#10003; Repondu</span>';
     html += '</div>';
 
     // Review text
     if (r.comment) {
-      html += '<div class="review-text clamped" id="review-text-' + r.review_id + '">' + escHtml(r.comment) + '</div>';
+      html += '<div class="review-text clamped" id="review-text-' + rid + '">' + escHtml(r.comment) + '</div>';
     }
 
-    // Existing reply (for replied reviews)
+    // Existing reply (for replied/responded reviews)
     if (r.reply_text) {
-      html += '<div class="review-reply-existing"><div class="review-reply-label">Votre r\u00e9ponse</div><div class="review-reply-text">' + escHtml(r.reply_text) + '</div></div>';
+      html += '<div class="review-reply-existing"><div class="review-reply-label">Votre reponse</div><div class="review-reply-text">' + escHtml(r.reply_text) + '</div></div>';
     }
 
-    // Reply form (for pending reviews)
-    if (r.status === 'pending') {
-      html += '<div class="review-reply-form" id="reply-form-' + r.review_id + '">';
-      html += '<textarea id="reply-text-' + r.review_id + '" placeholder="Votre r\u00e9ponse..."></textarea>';
+    // Reply form (for pending/new/seen reviews)
+    if (r.status !== 'responded' && r.status !== 'replied') {
+      var reviewId = r.review_id || r.id;
+      var isModerated = r.rating <= 3;
+      html += '<div class="review-reply-form" id="reply-form-' + reviewId + '">';
+      if (isModerated) {
+        html += '<div style="padding:8px 12px;background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.2);border-radius:8px;margin-bottom:8px;font-size:11px;color:#DC2626;font-weight:600;letter-spacing:.3px;">Attention : avis 1-3 etoiles — validation Hugo obligatoire + cooldown 24h avant publication</div>';
+      }
+      html += '<textarea id="reply-text-' + reviewId + '" placeholder="Votre r\u00e9ponse..."></textarea>';
       html += '<div class="review-reply-actions">';
-      html += '<button class="rbtn rbtn-ai" onclick="event.stopPropagation();generateAiDraft(\'' + r.review_id + '\')">&#10024; G\u00e9n\u00e9rer avec IA</button>';
-      html += '<button class="rbtn rbtn-publish" onclick="event.stopPropagation();publishReply(\'' + r.review_id + '\')">Publier sur Google</button>';
-      html += '<button class="rbtn rbtn-cancel" onclick="event.stopPropagation();toggleReview(\'' + r.review_id + '\')">Annuler</button>';
+      html += '<button class="rbtn rbtn-ai" onclick="event.stopPropagation();generateAiDraft(\'' + reviewId + '\')">&#10024; G\u00e9n\u00e9rer avec IA</button>';
+      if (isModerated) {
+        html += '<button class="rbtn rbtn-publish" onclick="event.stopPropagation();validateAndPublish(\'' + reviewId + '\')" style="background:#DC2626;border-color:#DC2626;">Valider (Hugo) + Publier</button>';
+      } else {
+        html += '<button class="rbtn rbtn-publish" onclick="event.stopPropagation();publishReply(\'' + reviewId + '\')">Publier sur Google</button>';
+      }
+      html += '<button class="rbtn rbtn-cancel" onclick="event.stopPropagation();toggleReview(\'' + reviewId + '\')">Annuler</button>';
       html += '</div></div>';
     }
 
@@ -1258,7 +1270,7 @@ function syncGoogleReviews() {
     })
     .catch(function(err) {
       var errEl = document.getElementById('reviews-error');
-      errEl.textContent = 'Erreur de synchronisation. R\u00e9essayez plus tard.';
+      errEl.textContent = 'Erreur de synchronisation. Reessayez plus tard.';
       errEl.style.display = 'block';
     })
     .finally(function() {
@@ -1267,24 +1279,51 @@ function syncGoogleReviews() {
     });
 }
 
+function validateAndPublish(reviewId) {
+  // For 1-3★ reviews: first validate (Hugo), then attempt publish
+  var textarea = document.getElementById('reply-text-' + reviewId);
+  if (!textarea || !textarea.value.trim()) {
+    alert('Ecrivez une reponse avant de publier.');
+    return;
+  }
+  // Step 1: validate
+  fetch(REVIEWS_API + '/' + reviewId + '/validate', { method: 'POST' })
+    .then(function(r) { return r.ok ? r.json() : r.json().then(function(d) { return Promise.reject(d.error || 'Erreur validation'); }); })
+    .then(function() {
+      // Step 2: attempt send (may be blocked by cooldown)
+      return publishReply(reviewId);
+    })
+    .catch(function(err) {
+      if (typeof err === 'string' && err.indexOf('Cooldown') >= 0) {
+        alert(err);
+      } else if (typeof err === 'string') {
+        alert('Validation effectuee. ' + err);
+      }
+    });
+}
+
 function generateAiDraft(reviewId) {
-  var review = reviewsData.find(function(r) { return r.review_id === reviewId; });
+  var review = reviewsData.find(function(r) { return (r.review_id || r.id) === reviewId; });
   if (!review) return;
   var btn = event.target;
   btn.disabled = true;
-  btn.textContent = 'G\u00e9n\u00e9ration...';
-  fetch(REVIEWS_API + '/ai-draft', {
+  btn.textContent = 'Generation...';
+  fetch(REVIEWS_API + '/' + reviewId + '/draft', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ review_id: reviewId, rating: review.rating, comment: review.comment, author_name: review.author_name })
+    headers: { 'Content-Type': 'application/json' }
   })
   .then(function(r) { return r.ok ? r.json() : Promise.reject('Erreur IA'); })
   .then(function(data) {
     var textarea = document.getElementById('reply-text-' + reviewId);
-    if (textarea && data.draft) textarea.value = data.draft;
+    // New API returns drafts array (3 variants) — use first one
+    var draftText = data.drafts ? data.drafts[0] : (data.draft || '');
+    if (textarea && draftText) textarea.value = draftText;
+    if (data.requires_hugo_validation) {
+      alert('Attention : cet avis necessite la validation de Hugo avant publication (cooldown 24h).');
+    }
   })
   .catch(function(err) {
-    alert('Erreur lors de la g\u00e9n\u00e9ration : ' + err);
+    alert('Erreur lors de la generation : ' + err);
   })
   .finally(function() {
     btn.disabled = false;
@@ -1295,7 +1334,7 @@ function generateAiDraft(reviewId) {
 function publishReply(reviewId) {
   var textarea = document.getElementById('reply-text-' + reviewId);
   if (!textarea || !textarea.value.trim()) {
-    alert('\u00c9crivez une r\u00e9ponse avant de publier.');
+    alert('Ecrivez une reponse avant de publier.');
     return;
   }
   var replyText = textarea.value.trim();
@@ -1304,23 +1343,28 @@ function publishReply(reviewId) {
   var btns = form.querySelectorAll('.rbtn');
   btns.forEach(function(b) { b.disabled = true; });
 
-  fetch(REVIEWS_API + '/' + reviewId + '/reply', {
+  fetch(REVIEWS_API + '/' + reviewId + '/send', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ reply_text: replyText })
+    body: JSON.stringify({ reply_text: replyText, sent_by: 'team' })
   })
-  .then(function(r) { return r.ok ? r.json() : Promise.reject('Erreur publication'); })
+  .then(function(r) {
+    if (r.status === 403) {
+      return r.json().then(function(d) { return Promise.reject(d.error || 'Publication refusee'); });
+    }
+    return r.ok ? r.json() : Promise.reject('Erreur publication');
+  })
   .then(function() {
     // Update local data
-    var review = reviewsData.find(function(r) { return r.review_id === reviewId; });
+    var review = reviewsData.find(function(r) { return (r.review_id || r.id) === reviewId; });
     if (review) {
-      review.status = 'replied';
+      review.status = 'responded';
       review.reply_text = replyText;
     }
     renderReviewsList();
   })
   .catch(function(err) {
-    alert('Erreur lors de la publication : ' + err);
+    alert('Publication : ' + err);
     btns.forEach(function(b) { b.disabled = false; });
   });
 }
