@@ -53,6 +53,8 @@ Toutes les routes consommées sont dans `cabinet-finance-api` (préfixe `/api`) 
 | `/api/post-traitement/patients` | GET / PUT | Liste partagée du jour (synchronisée entre tous les postes du cabinet) |
 | `/api/post-traitement/kpi-sent` | GET | Compteur d'emails envoyés |
 | `/api/post-traitement/kpi-sent/increment` | POST | Incrément du compteur |
+| `/api/post-traitement/coverage` | GET | **Suivi couverture par dentiste** (`?period=day\|week\|month`) — taux envoyés ÷ patients avec email, par praticien |
+| `/api/post-traitement/daily-eligible` | POST | Réception du snapshot « éligibles du jour par praticien » (poussé par Alfred 5.3, pas par le frontend) |
 | `/api/kpi-stats` | GET | KPIs Brevo (clics) + KPIs Google Places (note moyenne) |
 | `/api/google-reviews` | GET | Liste des avis Google |
 | `/api/google-reviews/sync` | POST | Force la resynchronisation des avis |
@@ -61,7 +63,19 @@ Toutes les routes consommées sont dans `cabinet-finance-api` (préfixe `/api`) 
 
 ## 7. Schéma de base de données
 
-N/A (frontend pur). La table `post_traitement_data` est gérée par `cabinet-finance-api` (créée à la volée par `post-treatment.js`).
+N/A (frontend pur). Tables gérées par `cabinet-finance-api` (créées à la volée par `post-treatment.js`) :
+- `post_traitement_data` — liste partagée du jour + compteur `kpi-sent` (KV, purge quotidienne).
+- `post_traitement_audit` — audit des opérations sur la liste.
+- **`post_traitement_sends`** — journal append-only des envois (date, `verstrekker_id`, dentiste, langue). **Aucune donnée patient** (RGPD). Numérateur du suivi couverture.
+- **`post_traitement_eligible`** — snapshot quotidien des patients éligibles par praticien (poussé par Alfred 5.3 depuis Dentadmin). Dénominateur du suivi couverture.
+
+### Suivi couverture par dentiste (depuis 2026-06-03)
+
+Mesure **le taux d'envoi des mails post-op par dentiste** (« qui fait le travail »). Taux = mails envoyés ÷ patients du jour **avec email**, par praticien, cumulé jour/semaine/mois.
+- **Numérateur** : chaque envoi réussi (`send-post-treatment`) logue dentiste + `verstrekkerId` + langue dans `post_traitement_sends` (fire-and-forget blindé : ne peut jamais faire échouer l'envoi Brevo).
+- **Dénominateur** : Alfred tâche 5.3 (`export-post-treatment.js`) pousse chaque matin le compte d'éligibles par `VerstrekkerID` (+ ceux avec email) vers `daily-eligible`.
+- **Jointure** sur `verstrekker_id` (incassable). Les envois sans praticien (saisie **Manuel** ou import Excel sans colonne praticien) remontent dans `unattributedSends` (« non rattachés »).
+- ⚠️ Les jours d'**import Excel manuel** (au lieu de la liste auto 5.3), les patients n'ont pas de `verstrekkerId` → envois non rattachés, attribution best-effort. La liste auto poussée par Alfred 5.3 porte le `verstrekkerId` et règle ce point.
 
 ## 8. Écrans / Pages
 
@@ -72,6 +86,7 @@ Une seule page (single HTML), avec plusieurs sections :
 - **Liste des patients du jour partagée** : récupérée via `/api/post-traitement/patients`, envoi en masse possible
 - **KPIs Brevo + Google** : affichage des clics email et de la note moyenne du cabinet
 - **Section Google Reviews** : liste des avis avec bouton "Brouillon IA" + "Répondre"
+- **Onglet "Suivi"** (3e onglet, depuis 2026-06-03) : tableau du taux de couverture par dentiste avec sélecteur Aujourd'hui / Cette semaine / Ce mois. Couleurs : vert ≥80 %, orange ≥50 %, rouge <50 %. Consomme `/api/post-traitement/coverage`.
 
 ## 9. Règles métier critiques
 
@@ -152,5 +167,5 @@ python3 -m http.server 8000
 
 ---
 
-**Dernière mise à jour** : 2026-04-11
-**Mis à jour par** : Claude Code (session naissance du workspace, Alfred)
+**Dernière mise à jour** : 2026-06-03 (ajout suivi couverture par dentiste)
+**Mis à jour par** : Claude Code (Alfred)
