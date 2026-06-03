@@ -355,6 +355,7 @@
       <div class="tab-nav">
         <button class="tab-btn active" data-tab="import" onclick="switchTab('import')">Import Liste</button>
         <button class="tab-btn" data-tab="manual" onclick="switchTab('manual')">Manuel</button>
+        <button class="tab-btn" data-tab="suivi" onclick="switchTab('suivi')">Suivi</button>
       </div>
 
       <!-- ── TAB: IMPORT ── -->
@@ -403,6 +404,18 @@
         <button class="btn-reset" id="btn-reset">&#8629; Nouveau patient</button>
       </div>
       </div><!-- /tab-manual -->
+
+      <!-- ── TAB: SUIVI (taux de couverture par dentiste) ── -->
+      <div class="tab-panel" id="tab-suivi">
+        <p class="cdesc" style="margin-bottom:14px;">Taux d'envoi des emails post-op par dentiste. <strong>Envoyés ÷ patients du jour avec email.</strong></p>
+        <div class="tg" id="cov-period-group" style="margin-bottom:16px;">
+          <button class="tb" data-value="day" onclick="setCovPeriod('day',this)">Aujourd'hui</button>
+          <button class="tb active" data-value="week" onclick="setCovPeriod('week',this)">Cette semaine</button>
+          <button class="tb" data-value="month" onclick="setCovPeriod('month',this)">Ce mois</button>
+        </div>
+        <div id="cov-range" style="font-size:11px;opacity:.55;margin-bottom:10px;"></div>
+        <div id="cov-body"></div>
+      </div>
     </div>
     <div class="cfooter">
       <span class="fm">Aucune donn&eacute;e stock&eacute;e &middot; RGPD</span>
@@ -697,7 +710,9 @@ function handleSend() {
     body: JSON.stringify({
       email: emailVal,
       templateId: TIDS[state.langue],
-      params: { CIVILITE: '' }
+      params: { CIVILITE: '' },
+      // Saisie manuelle : pas de dentiste rattache (envoi non attribue dans le suivi).
+      langue: state.langue
     })
   })
   .then(function(resp) {
@@ -747,6 +762,75 @@ function switchTab(tab) {
   } else {
     card.classList.remove('wide');
   }
+  if (tab === 'suivi') loadCoverage();
+}
+
+/* ── SUIVI : TAUX DE COUVERTURE PAR DENTISTE ── */
+var covPeriod = 'week';
+function setCovPeriod(period, btn) {
+  covPeriod = period;
+  var g = document.getElementById('cov-period-group');
+  g.querySelectorAll('.tb').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  loadCoverage();
+}
+function covColor(pct) {
+  if (pct === null || pct === undefined) return '#8A7E92';
+  if (pct >= 80) return '#34D399';
+  if (pct >= 50) return '#FBBF24';
+  return '#F87171';
+}
+function loadCoverage() {
+  var body = document.getElementById('cov-body');
+  if (!body) return;
+  body.innerHTML = '<div style="opacity:.6;font-size:13px;padding:14px 0;">Chargement…</div>';
+  fetch(PT_API + '/coverage?period=' + covPeriod, { headers: authHeaders() })
+    .then(function(r) { if (r.status === 401) { handleAuthFailure(); throw new Error('auth'); } return r.json(); })
+    .then(function(d) { renderCoverage(d); })
+    .catch(function() { body.innerHTML = '<div style="color:#F87171;font-size:13px;padding:14px 0;">Erreur de chargement du suivi.</div>'; });
+}
+function covRow(c1, c2, pctTxt, pctColor, c4, opts) {
+  opts = opts || {};
+  var base = 'display:flex;align-items:center;padding:9px 10px;font-size:13px;';
+  base += opts.head ? 'opacity:.55;font-size:11px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid rgba(206,147,216,.18);'
+        : opts.total ? 'border-top:1px solid rgba(206,147,216,.28);font-weight:700;margin-top:2px;'
+        : 'border-bottom:1px solid rgba(206,147,216,.10);';
+  return '<div style="' + base + '">'
+    + '<span style="flex:2.2;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + c1 + '</span>'
+    + '<span style="flex:1.3;text-align:right;font-variant-numeric:tabular-nums;">' + c2 + '</span>'
+    + '<span style="flex:1;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:' + pctColor + ';">' + pctTxt + '</span>'
+    + '<span style="flex:1;text-align:right;font-variant-numeric:tabular-nums;opacity:.75;">' + c4 + '</span>'
+    + '</div>';
+}
+function renderCoverage(d) {
+  var body = document.getElementById('cov-body');
+  var rangeEl = document.getElementById('cov-range');
+  if (d.from && d.to) rangeEl.textContent = (d.from === d.to) ? ('Le ' + d.from) : ('Du ' + d.from + ' au ' + d.to);
+  var list = d.dentists || [];
+  if (!list.length) {
+    body.innerHTML = '<div style="opacity:.6;font-size:13px;padding:14px 0;line-height:1.5;">Aucune donnée pour cette période.<br>Les patients éligibles sont calculés par Alfred chaque matin (jours ouvrés, 5h).</div>';
+    return;
+  }
+  var html = covRow('Dentiste', 'Envoyés', 'Taux', '#8A7E92', 'Sans email', { head: true });
+  for (var i = 0; i < list.length; i++) {
+    var r = list[i];
+    var pct = r.coverage;
+    var pctTxt = (pct === null || pct === undefined) ? '—' : (pct + '%');
+    html += covRow(
+      escHtml(r.dentiste || ('#' + r.verstrekkerId)),
+      r.sent + ' / ' + r.eligibleWithEmail,
+      pctTxt, covColor(pct),
+      (r.noEmail || 0), {}
+    );
+  }
+  var t = d.totals || {};
+  html += covRow('Total', (t.sent || 0) + ' / ' + (t.eligibleWithEmail || 0),
+    (t.coverage == null ? '—' : (t.coverage + '%')), covColor(t.coverage),
+    (t.noEmail || 0), { total: true });
+  if (d.unattributedSends) {
+    html += '<div style="font-size:11px;opacity:.55;margin-top:12px;line-height:1.5;">+ ' + d.unattributedSends + ' envoi(s) non rattaché(s) à un dentiste (saisie manuelle ou import sans praticien).</div>';
+  }
+  body.innerHTML = html;
 }
 
 /* ── IMPORT XLSX ── */
@@ -1053,7 +1137,11 @@ function sendOnePatient(idx) {
     body: JSON.stringify({
       email: p.email,
       templateId: TIDS[p.langue],
-      params: { CIVILITE: '' }
+      params: { CIVILITE: '' },
+      // Suivi couverture par dentiste : on transmet l'identite du praticien.
+      dentiste: p.dentiste || null,
+      verstrekkerId: (p.verstrekkerId != null ? p.verstrekkerId : null),
+      langue: p.langue
     })
   })
   .then(function(resp) {
